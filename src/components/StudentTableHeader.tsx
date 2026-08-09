@@ -1,6 +1,3 @@
-import type { Student } from "../types/fee";
-import { formatCurrency } from "./student-table-utils";
-
 interface StudentTableHeaderProps {
   totalStudents: number;
   studentsThisPage: number;

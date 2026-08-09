@@ -13,7 +13,10 @@ interface StudentDetailsPanelProps {
   onClose: () => void;
 }
 
-export default function StudentDetailsPanel({ student, onClose }: StudentDetailsPanelProps) {
+export default function StudentDetailsPanel({
+  student,
+  onClose,
+}: StudentDetailsPanelProps) {
   if (!student) {
     return null;
   }
@@ -40,9 +43,10 @@ export default function StudentDetailsPanel({ student, onClose }: StudentDetails
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-[#94A3B8] transition hover:bg-[#334155] hover:text-[#F1F5F9]"
+            aria-label="Close details panel"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-[#94A3B8] transition hover:bg-[#334155] hover:text-[#F1F5F9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#818CF8] focus-visible:outline-offset-2"
           >
-            ×
+            Ã—
           </button>
         </div>
 
@@ -67,11 +71,28 @@ export default function StudentDetailsPanel({ student, onClose }: StudentDetails
                         Instalment Plan
                       </h3>
                       <p className="mt-1 text-sm text-[#94A3B8]">
-                        Next instalment of <span className="font-medium text-[#F1F5F9]">
-                          {student.nextInstalmentAmount.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
-                        </span> is due on <span className="font-medium text-[#F1F5F9]">
-                          {new Date(student.nextInstalmentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                        </span>.
+                        Next instalment of{" "}
+                        <span className="font-medium text-[#F1F5F9]">
+                          {student.nextInstalmentAmount.toLocaleString(
+                            "en-IN",
+                            {
+                              style: "currency",
+                              currency: "INR",
+                              maximumFractionDigits: 0,
+                            },
+                          )}
+                        </span>{" "}
+                        is due on{" "}
+                        <span className="font-medium text-[#F1F5F9]">
+                          {new Date(
+                            student.nextInstalmentDate,
+                          ).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                        .
                       </p>
                     </div>
                   </div>
@@ -88,14 +109,21 @@ export default function StudentDetailsPanel({ student, onClose }: StudentDetails
                     <p className="text-xs text-[#94A3B8]">Withdrawn On</p>
                     <p className="mt-1 text-sm text-[#F1F5F9]">
                       {student.withdrawnOn
-                        ? new Date(student.withdrawnOn).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-                        : "—"}
+                        ? new Date(student.withdrawnOn).toLocaleDateString(
+                            "en-IN",
+                            { day: "2-digit", month: "short", year: "numeric" },
+                          )
+                        : "ï¿½"}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-[#94A3B8]">Refund Due</p>
                     <p className="mt-1 text-sm font-semibold text-[#FBBF24]">
-                      {(student.refundDue ?? 0).toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
+                      {(student.refundDue ?? 0).toLocaleString("en-IN", {
+                        style: "currency",
+                        currency: "INR",
+                        maximumFractionDigits: 0,
+                      })}
                     </p>
                   </div>
                 </div>

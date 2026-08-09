@@ -9,6 +9,7 @@ interface StudentTableProps {
   totalPages: number;
   selectedStudentIds: string[];
   selectedCount: number;
+  selectedVisibleCount: number;
   allSelected: boolean;
   onToggleStudentSelection: (studentId: string) => void;
   onToggleSelectAll: () => void;
@@ -50,6 +51,43 @@ function getBalanceDisplay(student: Student) {
   };
 }
 
+function getStatusDetail(student: Student) {
+  if (student.status === "OVERDUE" || student.status === "PARTIALLY_PAID") {
+    return `${student.daysOverdue} days overdue`;
+  }
+
+  if (student.status === "PAYMENT_FAILED") {
+    return "Payment failed";
+  }
+
+  if (student.status === "INSTALMENT_PLAN" && student.nextInstalmentDate) {
+    return `Next instalment ${new Date(
+      student.nextInstalmentDate,
+    ).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+    })}`;
+  }
+
+  if (student.status === "CREDIT_BALANCE") {
+    return `${formatCurrency(Math.abs(student.balance))} credit`;
+  }
+
+  if (student.status === "WITHDRAWN") {
+    return "Withdrawn";
+  }
+
+  return student.lastPaymentDate
+    ? `Last paid ${new Date(student.lastPaymentDate).toLocaleDateString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+        },
+      )}`
+    : null;
+}
+
 function StudentTable({
   students,
   totalStudents,
@@ -57,6 +95,7 @@ function StudentTable({
   totalPages,
   selectedStudentIds,
   selectedCount,
+  selectedVisibleCount,
   allSelected,
   onToggleStudentSelection,
   onToggleSelectAll,
@@ -85,7 +124,9 @@ function StudentTable({
 
           <p className="mt-1 text-sm text-[#94A3B8]">
             {selectedCount > 0
-              ? `${selectedCount} selected`
+              ? selectedVisibleCount < selectedCount
+                ? `${selectedCount} selected (${selectedVisibleCount} visible)`
+                : `${selectedCount} selected`
               : `Showing ${students.length} of ${totalStudents} students on page ${currentPage} of ${totalPages}`}
           </p>
         </div>
@@ -184,6 +225,7 @@ function StudentTable({
               <tbody>
                 {students.map((student) => {
                   const balance = getBalanceDisplay(student);
+                  const statusDetail = getStatusDetail(student);
 
                   return (
                     <tr
@@ -265,7 +307,14 @@ function StudentTable({
 
                       {/* Status */}
                       <td className="px-5 py-4">
-                        <StatusBadge status={student.status} />
+                        <div className="flex flex-col gap-1">
+                          <StatusBadge status={student.status} />
+                          {statusDetail && (
+                            <p className="text-xs text-[#94A3B8]">
+                              {statusDetail}
+                            </p>
+                          )}
+                        </div>
                       </td>
 
                       {/* Action */}
@@ -276,7 +325,8 @@ function StudentTable({
                             event.stopPropagation();
                             onStudentSelect(student);
                           }}
-                          className="rounded-lg px-3 py-2 text-xs font-medium text-[#818CF8] transition hover:bg-[#818CF8]/10 hover:text-[#A5B4FC]"
+                          aria-label={`View details for ${student.name}`}
+                          className="rounded-lg px-3 py-2 text-xs font-medium text-[#818CF8] transition hover:bg-[#818CF8]/10 hover:text-[#A5B4FC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#818CF8] focus-visible:outline-offset-2"
                         >
                           View
                         </button>
@@ -292,6 +342,7 @@ function StudentTable({
           <div className="divide-y divide-[#334155] lg:hidden">
             {students.map((student) => {
               const balance = getBalanceDisplay(student);
+              const statusDetail = getStatusDetail(student);
 
               return (
                 <button
@@ -307,7 +358,8 @@ function StudentTable({
                         checked={selectedStudentIds.includes(student.id)}
                         onChange={() => onToggleStudentSelection(student.id)}
                         onClick={(event) => event.stopPropagation()}
-                        className="h-4 w-4 rounded border-[#334155] bg-[#0F172A] text-[#818CF8]"
+                        aria-label={`Select ${student.name}`}
+                        className="h-4 w-4 rounded border-[#334155] bg-[#0F172A] text-[#818CF8] focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A]"
                       />
 
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#334155] text-xs font-semibold text-[#818CF8]">
@@ -331,7 +383,14 @@ function StudentTable({
                       </div>
                     </div>
 
-                    <StatusBadge status={student.status} />
+                    <div className="text-right">
+                      <StatusBadge status={student.status} />
+                      {statusDetail && (
+                        <p className="mt-2 text-xs text-[#94A3B8]">
+                          {statusDetail}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-3">
