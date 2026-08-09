@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import feeData from "./data/fee-data.json";
 
@@ -21,6 +21,8 @@ function App() {
   const [sortBy, setSortBy] = useState<SortOption>("name");
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   const filteredStudents = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -56,11 +58,25 @@ function App() {
     });
   }, [search, status, classFilter, sortBy]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredStudents.slice(startIndex, startIndex + pageSize);
+  }, [filteredStudents, currentPage]);
+
   function resetFilters() {
     setSearch("");
     setStatus("ALL");
     setClassFilter("ALL");
     setSortBy("name");
+    setCurrentPage(1);
   }
 
   return (
@@ -100,7 +116,11 @@ function App() {
           />
 
           <StudentTable
-            students={filteredStudents}
+            students={paginatedStudents}
+            totalStudents={filteredStudents.length}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
             onStudentSelect={setSelectedStudent}
           />
         </div>

@@ -1,6 +1,6 @@
 import type { Student } from "../types/fee";
 import StatusBadge from "./StatusBadge";
-
+import StudentActions from "./StudentActions";
 interface StudentDetailsPanelProps {
   student: Student | null;
   onClose: () => void;
@@ -185,7 +185,7 @@ function StudentDetailsPanel({ student, onClose }: StudentDetailsPanelProps) {
                 </div>
               </div>
             </section>
-
+            <StudentActions student={student} />
             {/* Fee breakdown */}
             <section className="rounded-2xl border border-[#334155] bg-[#1E293B]">
               <div className="border-b border-[#334155] px-5 py-4">
