@@ -22,6 +22,7 @@ function App() {
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const pageSize = 15;
 
   const filteredStudents = useMemo(() => {
@@ -58,6 +59,14 @@ function App() {
     });
   }, [search, status, classFilter, sortBy]);
 
+  const filteredSelectedCount = filteredStudents.filter((student) =>
+    selectedStudentIds.includes(student.id),
+  ).length;
+
+  const allFilteredSelected =
+    filteredStudents.length > 0 &&
+    filteredSelectedCount === filteredStudents.length;
+
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
 
   useEffect(() => {
@@ -71,12 +80,59 @@ function App() {
     return filteredStudents.slice(startIndex, startIndex + pageSize);
   }, [filteredStudents, currentPage]);
 
+  function toggleStudentSelection(studentId: string) {
+    setSelectedStudentIds((current) =>
+      current.includes(studentId)
+        ? current.filter((id) => id !== studentId)
+        : [...current, studentId],
+    );
+  }
+
+  function toggleSelectAll() {
+    setSelectedStudentIds((current) =>
+      allFilteredSelected ? [] : filteredStudents.map((student) => student.id),
+    );
+  }
+
+  function sendRemainderToSelected() {
+    if (selectedStudentIds.length === 0) {
+      return;
+    }
+
+    const recipients = data.students.filter((student) =>
+      selectedStudentIds.includes(student.id),
+    );
+
+    window.alert(
+      `Remainder sent to ${recipients.length} student${
+        recipients.length === 1 ? "" : "s"
+      }.`,
+    );
+    console.log("Send remainder to selected:", recipients);
+  }
+
+  function sendRemainderToAllFiltered() {
+    if (filteredStudents.length === 0) {
+      return;
+    }
+
+    const recipients = filteredStudents;
+
+    window.alert(
+      `Remainder sent to ${recipients.length} student${
+        recipients.length === 1 ? "" : "s"
+      }.`,
+    );
+    console.log("Send remainder to all filtered:", recipients);
+  }
+
   function resetFilters() {
     setSearch("");
     setStatus("ALL");
     setClassFilter("ALL");
     setSortBy("name");
     setCurrentPage(1);
+    setSelectedStudentIds([]);
   }
 
   return (
@@ -120,6 +176,13 @@ function App() {
             totalStudents={filteredStudents.length}
             currentPage={currentPage}
             totalPages={totalPages}
+            selectedStudentIds={selectedStudentIds}
+            selectedCount={filteredSelectedCount}
+            allSelected={allFilteredSelected}
+            onToggleStudentSelection={toggleStudentSelection}
+            onToggleSelectAll={toggleSelectAll}
+            onSendRemainder={sendRemainderToSelected}
+            onSendRemainderToAllFiltered={sendRemainderToAllFiltered}
             onPageChange={setCurrentPage}
             onStudentSelect={setSelectedStudent}
           />

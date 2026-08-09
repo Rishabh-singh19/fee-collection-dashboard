@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Student } from "../types/fee";
 import StatusBadge from "./StatusBadge";
 
@@ -6,6 +7,13 @@ interface StudentTableProps {
   totalStudents: number;
   currentPage: number;
   totalPages: number;
+  selectedStudentIds: string[];
+  selectedCount: number;
+  allSelected: boolean;
+  onToggleStudentSelection: (studentId: string) => void;
+  onToggleSelectAll: () => void;
+  onSendRemainder: () => void;
+  onSendRemainderToAllFiltered: () => void;
   onPageChange: (page: number) => void;
   onStudentSelect: (student: Student) => void;
 }
@@ -47,22 +55,67 @@ function StudentTable({
   totalStudents,
   currentPage,
   totalPages,
+  selectedStudentIds,
+  selectedCount,
+  allSelected,
+  onToggleStudentSelection,
+  onToggleSelectAll,
+  onSendRemainder,
+  onSendRemainderToAllFiltered,
   onPageChange,
   onStudentSelect,
 }: StudentTableProps) {
+  const selectAllCheckbox = useRef<HTMLInputElement | null>(null);
+  const someSelected = selectedCount > 0 && !allSelected;
+
+  useEffect(() => {
+    if (selectAllCheckbox.current) {
+      selectAllCheckbox.current.indeterminate = someSelected;
+    }
+  }, [someSelected]);
+
   return (
     <section className="overflow-hidden rounded-2xl border border-[#334155] bg-[#1E293B]">
       {/* Header */}
-      <div className="flex flex-col gap-1 border-b border-[#334155] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-[#334155] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-[#F1F5F9]">
             Student Accounts
           </h2>
 
           <p className="mt-1 text-sm text-[#94A3B8]">
-            Showing {students.length} of {totalStudents} students on page{" "}
-            {currentPage} of {totalPages}
+            {selectedCount > 0
+              ? `${selectedCount} selected`
+              : `Showing ${students.length} of ${totalStudents} students on page ${currentPage} of ${totalPages}`}
           </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onSendRemainder}
+            disabled={selectedCount === 0}
+            className="rounded-lg border border-[#334155] bg-[#1E293B] px-4 py-2 text-sm font-medium text-[#F1F5F9] transition hover:bg-[#334155]/80 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Send remainder to selected
+          </button>
+
+          <button
+            type="button"
+            onClick={onSendRemainderToAllFiltered}
+            disabled={totalStudents === 0}
+            className="rounded-lg border border-[#334155] bg-[#1E293B] px-4 py-2 text-sm font-medium text-[#F1F5F9] transition hover:bg-[#334155]/80 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Send remainder to all filtered
+          </button>
+
+          <button
+            type="button"
+            onClick={onToggleSelectAll}
+            className="rounded-lg border border-[#334155] bg-[#1E293B] px-4 py-2 text-sm font-medium text-[#F1F5F9] transition hover:bg-[#334155]/80"
+          >
+            {allSelected ? "Clear selection" : "Select all"}
+          </button>
         </div>
       </div>
 
@@ -88,6 +141,16 @@ function StudentTable({
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-[#334155] bg-[#0F172A]/40">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#94A3B8]">
+                    <input
+                      ref={selectAllCheckbox}
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={onToggleSelectAll}
+                      className="h-4 w-4 rounded border-[#334155] bg-[#0F172A] text-[#818CF8] focus:ring-[#818CF8]"
+                    />
+                  </th>
+
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#94A3B8]">
                     Student
                   </th>
@@ -128,6 +191,16 @@ function StudentTable({
                       onClick={() => onStudentSelect(student)}
                       className="cursor-pointer border-b border-[#334155]/70 transition hover:bg-[#334155]/40"
                     >
+                      <td className="px-5 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedStudentIds.includes(student.id)}
+                          onChange={() => onToggleStudentSelection(student.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="h-4 w-4 rounded border-[#334155] bg-[#0F172A] text-[#818CF8]"
+                        />
+                      </td>
+
                       {/* Student */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
@@ -229,6 +302,14 @@ function StudentTable({
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedStudentIds.includes(student.id)}
+                        onChange={() => onToggleStudentSelection(student.id)}
+                        onClick={(event) => event.stopPropagation()}
+                        className="h-4 w-4 rounded border-[#334155] bg-[#0F172A] text-[#818CF8]"
+                      />
+
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#334155] text-xs font-semibold text-[#818CF8]">
                         {student.name
                           .split(" ")
