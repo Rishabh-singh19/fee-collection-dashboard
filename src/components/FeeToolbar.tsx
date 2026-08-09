@@ -55,22 +55,28 @@ function FeeToolbar({
               Status
             </label>
 
-            <select
-              value={status}
-              onChange={(event) =>
-                onStatusChange(event.target.value as FeeStatus | "ALL")
-              }
-              className="w-full cursor-pointer rounded-xl border border-[#334155] bg-[#0F172A] px-3 py-2.5 text-sm text-[#F1F5F9] outline-none transition focus:border-[#818CF8] focus:ring-2 focus:ring-[#818CF8]/20"
-            >
-              <option value="ALL">All statuses</option>
-              <option value="OVERDUE">Overdue</option>
-              <option value="PARTIALLY_PAID">Partially paid</option>
-              <option value="PAID">Paid</option>
-              <option value="PAYMENT_FAILED">Payment failed</option>
-              <option value="INSTALMENT_PLAN">Instalment plan</option>
-              <option value="CREDIT_BALANCE">Credit balance</option>
-              <option value="WITHDRAWN">Withdrawn</option>
-            </select>
+            <div className="relative">
+              <select
+                value={status}
+                onChange={(event) =>
+                  onStatusChange(event.target.value as FeeStatus | "ALL")
+                }
+                className="w-full cursor-pointer rounded-xl border border-[#334155] bg-[#0F172A] px-3 pr-10 py-2.5 text-sm text-[#F1F5F9] outline-none appearance-none transition focus:border-[#818CF8] focus:ring-2 focus:ring-[#818CF8]/20"
+              >
+                <option value="ALL">All statuses</option>
+                <option value="OVERDUE">Overdue</option>
+                <option value="PARTIALLY_PAID">Partially paid</option>
+                <option value="PAID">Paid</option>
+                <option value="PAYMENT_FAILED">Payment failed</option>
+                <option value="INSTALMENT_PLAN">Instalment plan</option>
+                <option value="CREDIT_BALANCE">Credit balance</option>
+                <option value="WITHDRAWN">Withdrawn</option>
+              </select>
+
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#94A3B8]">
+                ▾
+              </span>
+            </div>
           </div>
 
           {/* Class */}
@@ -79,23 +85,29 @@ function FeeToolbar({
               Class
             </label>
 
-            <select
-              value={classFilter}
-              onChange={(event) => onClassChange(event.target.value)}
-              className="w-full cursor-pointer rounded-xl border border-[#334155] bg-[#0F172A] px-3 py-2.5 text-sm text-[#F1F5F9] outline-none transition focus:border-[#818CF8] focus:ring-2 focus:ring-[#818CF8]/20"
-            >
-              <option value="ALL">All classes</option>
+            <div className="relative">
+              <select
+                value={classFilter}
+                onChange={(event) => onClassChange(event.target.value)}
+                className="w-full cursor-pointer rounded-xl border border-[#334155] bg-[#0F172A] px-3 pr-10 py-2.5 text-sm text-[#F1F5F9] outline-none appearance-none transition focus:border-[#818CF8] focus:ring-2 focus:ring-[#818CF8]/20"
+              >
+                <option value="ALL">All classes</option>
 
-              {Array.from({ length: 12 }, (_, index) => {
-                const className = String(index + 1);
+                {Array.from({ length: 12 }, (_, index) => {
+                  const className = String(index + 1);
 
-                return (
-                  <option key={className} value={className}>
-                    Class {className}
-                  </option>
-                );
-              })}
-            </select>
+                  return (
+                    <option key={className} value={className}>
+                      Class {className}
+                    </option>
+                  );
+                })}
+              </select>
+
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#94A3B8]">
+                ▾
+              </span>
+            </div>
           </div>
 
           {/* Sort */}
@@ -104,19 +116,25 @@ function FeeToolbar({
               Sort by
             </label>
 
-            <select
-              value={sortBy}
-              onChange={(event) =>
-                onSortChange(
-                  event.target.value as "name" | "balance" | "status",
-                )
-              }
-              className="w-full cursor-pointer rounded-xl border border-[#334155] bg-[#0F172A] px-3 py-2.5 text-sm text-[#F1F5F9] outline-none transition focus:border-[#818CF8] focus:ring-2 focus:ring-[#818CF8]/20"
-            >
-              <option value="name">Student name</option>
-              <option value="balance">Outstanding amount</option>
-              <option value="status">Fee status</option>
-            </select>
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(event) =>
+                  onSortChange(
+                    event.target.value as "name" | "balance" | "status",
+                  )
+                }
+                className="w-full cursor-pointer rounded-xl border border-[#334155] bg-[#0F172A] px-3 pr-10 py-2.5 text-sm text-[#F1F5F9] outline-none appearance-none transition focus:border-[#818CF8] focus:ring-2 focus:ring-[#818CF8]/20"
+              >
+                <option value="name">Student name</option>
+                <option value="balance">Outstanding amount</option>
+                <option value="status">Fee status</option>
+              </select>
+
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#94A3B8]">
+                ▾
+              </span>
+            </div>
           </div>
 
           {/* Reset */}
