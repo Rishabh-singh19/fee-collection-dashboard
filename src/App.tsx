@@ -244,19 +244,6 @@ function App() {
         <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-64 bg-[radial-gradient(circle_at_top,rgba(129,140,248,0.08),transparent_65%)]" />
 
         <div className="relative z-10 space-y-8">
-          <section>
-            <p className="text-sm font-medium text-[#818CF8]">Fee Management</p>
-
-            <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#F1F5F9] sm:text-3xl">
-              Fee Collection Dashboard
-            </h2>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#94A3B8]">
-              Monitor student fee accounts, identify outstanding balances, and
-              follow up on payments that need attention.
-            </p>
-          </section>
-
           <SummaryCards students={data.students} />
 
           <FeeToolbar
