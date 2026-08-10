@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Header from "./components/Header";
 import SummaryCards from "./components/SummaryCards";
@@ -8,7 +8,11 @@ import StudentDetailsPanel from "./components/StudentDetailsPanel";
 
 import type { FeeData, FeeStatus, Student } from "./types/fee";
 
-type SortOption = "name" | "balance" | "status";
+type SortOption = "name" | "balance" | "daysOverdue";
+
+type ReminderFilter = "ALL" | "CONTACTED" | "NEVER_CONTACTED";
+
+type StatusFilter = FeeStatus | "ALL" | "OTHER";
 
 function App() {
   const [data, setData] = useState<FeeData | null>(null);
@@ -16,13 +20,20 @@ function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<FeeStatus | "ALL">("ALL");
+  const [status, setStatus] = useState<StatusFilter>("ALL");
   const [classFilter, setClassFilter] = useState("ALL");
+  const [reminderFilter, setReminderFilter] = useState<ReminderFilter>("ALL");
+  const [minDue, setMinDue] = useState<number | "">("");
+  const [maxDue, setMaxDue] = useState<number | "">("");
   const [sortBy, setSortBy] = useState<SortOption>("name");
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const actionTimeoutRef = useRef<number | null>(null);
   const pageSize = 15;
 
   const loadFeeData = useCallback(async () => {
@@ -67,12 +78,33 @@ function App() {
         student.guardian.name.toLowerCase().includes(normalizedSearch) ||
         student.guardian.phone.includes(normalizedSearch);
 
-      const matchesStatus = status === "ALL" || student.status === status;
+      const matchesStatus =
+        status === "ALL" ||
+        (status === "OTHER"
+          ? !["OVERDUE", "PARTIALLY_PAID", "PAID"].includes(student.status)
+          : student.status === status);
 
       const matchesClass =
         classFilter === "ALL" || student.class === classFilter;
 
-      return matchesSearch && matchesStatus && matchesClass;
+      const matchesReminder =
+        reminderFilter === "ALL" ||
+        (reminderFilter === "CONTACTED"
+          ? student.remindersSent > 0 || Boolean(student.lastReminderAt)
+          : student.remindersSent === 0 && !student.lastReminderAt);
+
+      const dueAmount = Math.max(student.balance, 0);
+      const matchesAmount =
+        (minDue === "" || dueAmount >= minDue) &&
+        (maxDue === "" || dueAmount <= maxDue);
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesClass &&
+        matchesReminder &&
+        matchesAmount
+      );
     });
 
     return [...result].sort((a, b) => {
@@ -80,15 +112,24 @@ function App() {
         case "balance":
           return b.balance - a.balance;
 
-        case "status":
-          return a.status.localeCompare(b.status);
+        case "daysOverdue":
+          return b.daysOverdue - a.daysOverdue;
 
         case "name":
         default:
           return a.name.localeCompare(b.name);
       }
     });
-  }, [data, search, status, classFilter, sortBy]);
+  }, [
+    data,
+    search,
+    status,
+    classFilter,
+    reminderFilter,
+    minDue,
+    maxDue,
+    sortBy,
+  ]);
 
   const selectedCount = selectedStudentIds.length;
 
@@ -96,17 +137,177 @@ function App() {
     selectedStudentIds.includes(student.id),
   ).length;
 
+  const selectedHouseholdCount = useMemo(
+    () =>
+      new Set(
+        data?.students
+          .filter((student) => selectedStudentIds.includes(student.id))
+          .map((student) => student.familyId),
+      ).size,
+    [data, selectedStudentIds],
+  );
+
+  const filteredHouseholdCount = useMemo(
+    () => new Set(filteredStudents.map((student) => student.familyId)).size,
+    [filteredStudents],
+  );
+
+  const activeFilterCount = [
+    search.trim() !== "",
+    status !== "ALL",
+    reminderFilter !== "ALL",
+    classFilter !== "ALL",
+    minDue !== "",
+    maxDue !== "",
+  ].filter(Boolean).length;
+
   const allFilteredSelected =
     filteredStudents.length > 0 &&
     filteredSelectedCount === filteredStudents.length;
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
 
+  const emptyStateMessage = useMemo(() => {
+    if (filteredStudents.length > 0) {
+      return "";
+    }
+
+    if (search.trim() !== "") {
+      return "No students match your search.";
+    }
+
+    if (status === "OVERDUE") {
+      return "Great — no overdue students found.";
+    }
+
+    if (activeFilterCount > 0) {
+      return "No students match your filter criteria.";
+    }
+
+    return "No students found.";
+  }, [filteredStudents.length, search, status, activeFilterCount]);
+
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(1);
     }
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, status, classFilter, reminderFilter, minDue, maxDue]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLElement &&
+          (active.tagName === "INPUT" ||
+            active.tagName === "TEXTAREA" ||
+            active.tagName === "SELECT" ||
+            active.isContentEditable)
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      if (event.key === "Escape") {
+        if (selectedStudent) {
+          setSelectedStudent(null);
+          return;
+        }
+
+        if (isFilterPanelOpen) {
+          setIsFilterPanelOpen(false);
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedStudent, isFilterPanelOpen]);
+
+  function clearActionTimeout() {
+    if (actionTimeoutRef.current !== null) {
+      window.clearTimeout(actionTimeoutRef.current);
+      actionTimeoutRef.current = null;
+    }
+  }
+
+  function showActionFeedback(message: string) {
+    clearActionTimeout();
+    setActionMessage(message);
+    actionTimeoutRef.current = window.setTimeout(() => {
+      setActionMessage(null);
+      actionTimeoutRef.current = null;
+    }, 3200);
+  }
+
+  function getHouseholdCount(students: Student[]) {
+    return new Set(students.map((student) => student.familyId)).size;
+  }
+
+  function sendReminderToSelected() {
+    if (selectedStudentIds.length === 0 || !data) {
+      return;
+    }
+
+    const recipients = data.students.filter((student) =>
+      selectedStudentIds.includes(student.id),
+    );
+    const householdCount = getHouseholdCount(recipients);
+
+    setActionMessage("Sending reminders…");
+    clearActionTimeout();
+    actionTimeoutRef.current = window.setTimeout(() => {
+      showActionFeedback(
+        `✓ Reminder sent to ${recipients.length} students across ${householdCount} household${
+          householdCount === 1 ? "" : "s"
+        }.`,
+      );
+      console.log("Send reminder to selected:", recipients);
+    }, 700);
+  }
+
+  function sendReminderToAllFiltered() {
+    if (filteredStudents.length === 0 || !data) {
+      return;
+    }
+
+    const householdCount = getHouseholdCount(filteredStudents);
+
+    setActionMessage("Sending reminders…");
+    clearActionTimeout();
+    actionTimeoutRef.current = window.setTimeout(() => {
+      showActionFeedback(
+        `✓ Reminder sent to ${filteredStudents.length} students across ${householdCount} household${
+          householdCount === 1 ? "" : "s"
+        }.`,
+      );
+      console.log("Send reminder to all filtered:", filteredStudents);
+    }, 700);
+  }
+
+  function resetFilters() {
+    setSearch("");
+    setStatus("ALL");
+    setReminderFilter("ALL");
+    setClassFilter("ALL");
+    setMinDue("");
+    setMaxDue("");
+    setSortBy("name");
+    setCurrentPage(1);
+    setSelectedStudentIds([]);
+  }
 
   const paginatedStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -125,52 +326,6 @@ function App() {
     setSelectedStudentIds(() =>
       allFilteredSelected ? [] : filteredStudents.map((student) => student.id),
     );
-  }
-
-  function getHouseholdCount(students: Student[]) {
-    return new Set(students.map((student) => student.familyId)).size;
-  }
-
-  function sendRemainderToSelected() {
-    if (selectedStudentIds.length === 0 || !data) {
-      return;
-    }
-
-    const recipients = data.students.filter((student) =>
-      selectedStudentIds.includes(student.id),
-    );
-    const householdCount = getHouseholdCount(recipients);
-
-    window.alert(
-      `Reminder sent to ${recipients.length} student${
-        recipients.length === 1 ? "" : "s"
-      } across ${householdCount} household${householdCount === 1 ? "" : "s"}.`,
-    );
-    console.log("Send remainder to selected:", recipients);
-  }
-
-  function sendRemainderToAllFiltered() {
-    if (filteredStudents.length === 0 || !data) {
-      return;
-    }
-
-    const householdCount = getHouseholdCount(filteredStudents);
-
-    window.alert(
-      `Reminder sent to ${filteredStudents.length} student${
-        filteredStudents.length === 1 ? "" : "s"
-      } across ${householdCount} household${householdCount === 1 ? "" : "s"}.`,
-    );
-    console.log("Send remainder to all filtered:", filteredStudents);
-  }
-
-  function resetFilters() {
-    setSearch("");
-    setStatus("ALL");
-    setClassFilter("ALL");
-    setSortBy("name");
-    setCurrentPage(1);
-    setSelectedStudentIds([]);
   }
 
   if (isLoading) {
@@ -249,14 +404,30 @@ function App() {
           <FeeToolbar
             search={search}
             status={status}
+            reminderFilter={reminderFilter}
             classFilter={classFilter}
+            minDue={minDue}
+            maxDue={maxDue}
             sortBy={sortBy}
+            activeFilterCount={activeFilterCount}
+            isFilterPanelOpen={isFilterPanelOpen}
+            searchInputRef={searchInputRef}
             onSearchChange={setSearch}
             onStatusChange={setStatus}
+            onReminderFilterChange={setReminderFilter}
             onClassChange={setClassFilter}
+            onMinDueChange={setMinDue}
+            onMaxDueChange={setMaxDue}
             onSortChange={setSortBy}
             onReset={resetFilters}
+            onToggleFilters={() => setIsFilterPanelOpen((current) => !current)}
           />
+
+          {actionMessage ? (
+            <div className="rounded-2xl border border-[#334155] bg-[#0F172A] px-4 py-3 text-sm text-[#A5F3FC] shadow-sm sm:px-5">
+              {actionMessage}
+            </div>
+          ) : null}
 
           <StudentTable
             students={paginatedStudents}
@@ -266,11 +437,14 @@ function App() {
             selectedStudentIds={selectedStudentIds}
             selectedCount={selectedCount}
             selectedVisibleCount={filteredSelectedCount}
+            selectedHouseholdCount={selectedHouseholdCount}
+            filteredHouseholdCount={filteredHouseholdCount}
             allSelected={allFilteredSelected}
+            emptyStateMessage={emptyStateMessage}
             onToggleStudentSelection={toggleStudentSelection}
             onToggleSelectAll={toggleSelectAll}
-            onSendRemainder={sendRemainderToSelected}
-            onSendRemainderToAllFiltered={sendRemainderToAllFiltered}
+            onSendReminder={sendReminderToSelected}
+            onSendReminderToAllFiltered={sendReminderToAllFiltered}
             onPageChange={setCurrentPage}
             onStudentSelect={setSelectedStudent}
           />

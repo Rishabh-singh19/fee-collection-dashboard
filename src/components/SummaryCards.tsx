@@ -20,12 +20,14 @@ function SummaryCard({
   valueClassName,
 }: SummaryCardProps) {
   return (
-    <div className="rounded-2xl border border-[#334155] bg-[#1E293B] p-5 transition-all duration-200 hover:border-[#475569] hover:bg-[#253349]">
+    <div className="rounded-2xl bg-[#1E293B] p-5 shadow-[0_15px_30px_-20px_rgba(0,0,0,0.35)] transition-all duration-200 hover:shadow-[0_18px_40px_-20px_rgba(0,0,0,0.4)] hover:bg-[#253349]">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-[#94A3B8]">{label}</p>
 
-          <p className={`mt-2 text-2xl font-bold tracking-tight ${valueClassName}`}>
+          <p
+            className={`mt-2 text-2xl font-bold tracking-tight ${valueClassName}`}
+          >
             ₹{value.toLocaleString("en-IN")}
           </p>
         </div>
@@ -43,32 +45,30 @@ function SummaryCard({
 function SummaryCards({ students }: SummaryCardsProps) {
   const totalBilled = students.reduce(
     (total, student) => total + student.totalBilled,
-    0
+    0,
   );
 
   const totalCollected = students.reduce(
     (total, student) => total + student.totalPaid,
-    0
+    0,
   );
 
   const totalOutstanding = students.reduce(
     (total, student) => total + Math.max(student.balance, 0),
-    0
+    0,
   );
 
   const overdueStudents = students.filter(
-    (student) => student.status === "OVERDUE"
+    (student) => student.status === "OVERDUE",
   );
 
   const overdueAmount = overdueStudents.reduce(
     (total, student) => total + Math.max(student.balance, 0),
-    0
+    0,
   );
 
   const collectionPercentage =
-    totalBilled > 0
-      ? Math.round((totalCollected / totalBilled) * 100)
-      : 0;
+    totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
 
   return (
     <section>
@@ -114,7 +114,7 @@ function SummaryCards({ students }: SummaryCardsProps) {
           value={overdueAmount}
           description={`${overdueStudents.length} students require attention`}
           icon="!"
-          valueClassName="text-[#FBBF24]"
+          valueClassName="text-[#F87171]"
         />
       </div>
     </section>

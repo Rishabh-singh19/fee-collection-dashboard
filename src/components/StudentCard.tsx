@@ -21,7 +21,7 @@ export default function StudentCard({
     <button
       type="button"
       onClick={() => onStudentSelect(student)}
-      className="w-full p-4 text-left transition hover:bg-[#334155]/40"
+      className="w-full rounded-3xl bg-[#1E293B] p-4 text-left shadow-[0_15px_30px_-20px_rgba(0,0,0,0.35)] transition hover:shadow-[0_18px_40px_-20px_rgba(0,0,0,0.4)] hover:bg-[#334155]/40"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
@@ -102,6 +102,7 @@ function getBalanceDisplay(student: Student) {
   return {
     amount: formatCurrency(student.balance),
     label: "Outstanding",
-    className: "text-[#FBBF24]",
+    className:
+      student.status === "OVERDUE" ? "text-[#F87171]" : "text-[#FBBF24]",
   };
 }

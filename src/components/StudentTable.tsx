@@ -10,11 +10,14 @@ interface StudentTableProps {
   selectedStudentIds: string[];
   selectedCount: number;
   selectedVisibleCount: number;
+  selectedHouseholdCount: number;
+  filteredHouseholdCount: number;
   allSelected: boolean;
+  emptyStateMessage: string;
   onToggleStudentSelection: (studentId: string) => void;
   onToggleSelectAll: () => void;
-  onSendRemainder: () => void;
-  onSendRemainderToAllFiltered: () => void;
+  onSendReminder: () => void;
+  onSendReminderToAllFiltered: () => void;
   onPageChange: (page: number) => void;
   onStudentSelect: (student: Student) => void;
 }
@@ -47,7 +50,8 @@ function getBalanceDisplay(student: Student) {
   return {
     amount: formatCurrency(student.balance),
     label: "Outstanding",
-    className: "text-[#FBBF24]",
+    className:
+      student.status === "OVERDUE" ? "text-[#F87171]" : "text-[#FBBF24]",
   };
 }
 
@@ -96,11 +100,14 @@ function StudentTable({
   selectedStudentIds,
   selectedCount,
   selectedVisibleCount,
+  selectedHouseholdCount,
+  filteredHouseholdCount,
   allSelected,
+  emptyStateMessage,
   onToggleStudentSelection,
   onToggleSelectAll,
-  onSendRemainder,
-  onSendRemainderToAllFiltered,
+  onSendReminder,
+  onSendReminderToAllFiltered,
   onPageChange,
   onStudentSelect,
 }: StudentTableProps) {
@@ -114,7 +121,7 @@ function StudentTable({
   }, [someSelected]);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#334155] bg-[#1E293B]">
+    <section className="overflow-hidden rounded-2xl bg-[#1E293B] shadow-[0_15px_30px_-20px_rgba(0,0,0,0.35)]">
       {/* Header */}
       <div className="flex flex-col gap-4 border-b border-[#334155] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -127,27 +134,29 @@ function StudentTable({
               ? selectedVisibleCount < selectedCount
                 ? `${selectedCount} selected (${selectedVisibleCount} visible)`
                 : `${selectedCount} selected`
-              : `Showing ${students.length} of ${totalStudents} students on page ${currentPage} of ${totalPages}`}
+              : `Showing ${students.length} of ${totalStudents} students · ${filteredHouseholdCount} families in view`}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={onSendRemainder}
+            onClick={onSendReminder}
             disabled={selectedCount === 0}
             className="rounded-lg border border-[#334155] bg-[#1E293B] px-4 py-2 text-sm font-medium text-[#F1F5F9] transition hover:bg-[#334155]/80 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Send remainder to selected
+            {selectedCount > 0
+              ? `Remind ${selectedHouseholdCount} famil${selectedHouseholdCount === 1 ? "y" : "ies"}`
+              : "Select students to remind"}
           </button>
 
           <button
             type="button"
-            onClick={onSendRemainderToAllFiltered}
+            onClick={onSendReminderToAllFiltered}
             disabled={totalStudents === 0}
             className="rounded-lg border border-[#334155] bg-[#1E293B] px-4 py-2 text-sm font-medium text-[#F1F5F9] transition hover:bg-[#334155]/80 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Send remainder to all filtered
+            Remind all filtered families
           </button>
 
           <button
@@ -168,11 +177,13 @@ function StudentTable({
           </div>
 
           <h3 className="mt-4 text-sm font-semibold text-[#F1F5F9]">
-            No students found
+            {emptyStateMessage || "No students found"}
           </h3>
 
           <p className="mt-1 max-w-sm text-sm text-[#94A3B8]">
-            Try changing your search or filter criteria.
+            {emptyStateMessage.includes("search")
+              ? "Try another search or clear filters."
+              : "Try changing your search or filter criteria."}
           </p>
         </div>
       ) : (
